@@ -11,9 +11,6 @@ branches:
   only:
     - develop
 
-before_install:
-  - npm i -g npm@5
-
 before_script:
   - npm prune
 
