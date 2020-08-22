@@ -1,0 +1,25 @@
+language: node_js
+
+cache:
+  directories:
+    - ~/.npm
+
+node_js:
+  - "lts/*"
+
+branches:
+  only:
+    - develop
+
+before_install:
+  - npm i -g npm@5
+
+before_script:
+  - npm prune
+
+script:
+  -npx sync-glitch-cli
+
+notifications:
+  email:
+    on_failure: always
