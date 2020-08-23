@@ -3,6 +3,7 @@ const discord = require('discord.js');
 
 const client = new discord.Client();
 
+// ----- Initialize -----
 client.on('ready', _ => {
     console.log('Bot is ready!');
 });
@@ -13,3 +14,5 @@ if (process.env.DISCORD_BOT_TOKEN == undefined) {
 }
 
 client.login(process.env.DISCORD_BOT_TOKEN);
+
+// ----- Main process -----
