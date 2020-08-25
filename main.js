@@ -30,6 +30,9 @@ let   data;                                                   // 前回の更新
 
 const contributorPattern = /(?<=編集者\s*:\s+).+(?=\s+[\]|])/;
 
+const scrapingDelay = 1000; // スクレイピングの間隔（ミリ秒）
+let   lastScraped;          // 最後のスクレイピング時間（ミリ秒）
+
 // 10分おきに更新ページ取得を実行
 // cron.schedule('*/10 * * * *', getUpdatedPage);
 getUpdatedPage().then(res => console.log(updatedPages));
@@ -38,20 +41,28 @@ getUpdatedPage().then(res => console.log(updatedPages));
  * ウィキの更新情報を取得
  */
 function getUpdatedPage() {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _) => {
+        console.log('更新ページ一覧を取得中…');
+
         fetch(pagelistUrl)
             .then(res => res.text())
             .then(async body => {
                 const $                = cheerio.load(body);
                 const $pagelistEntries = $('table.pagelist').find('tr');
                       data             = JSON.parse(fs.readFileSync('./data.json', 'utf-8'));
+                      lastScraped      = new Date().getTime();
+
+                console.log('更新ページ一覧取得完了');
 
                 for (let i = 1; i < $pagelistEntries.length; i++) {
                     // デバッグ用
-                    if (i > 2) break;
+                    if (i > 10) break;
 
                     // 最終更新情報に到達してれば終了
-                    if (isLatest) break;
+                    if (isLatest) {
+                        console.log('yay');
+                        break;
+                    }
 
                     const $link    = $pagelistEntries.eq(i).find('a');
                     const pagename = $link.text().trim();
@@ -60,13 +71,18 @@ function getUpdatedPage() {
                     // ページIDが取得できなければ飛ばす
                     if (pageid.length === -1) continue;
 
+                    console.log(`ページ「${pagename}」の編集履歴を取得中…`);
+
                     // ページの更新情報を取得
                     await getUpdateInfo(pageid[0], pagename);
+
+                    console.log(`ページ「${pagename}」の編集履歴取得完了`);
                 }
 
+                console.log('更新ページ一覧取得完了');
                 resolve();
             });
-    })
+    });
 
 }
 
@@ -76,8 +92,18 @@ function getUpdatedPage() {
  * @param {string} pagename 取得先のページの名前
  */
 function getUpdateInfo(pageid, pagename) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, _) => {
         const url = `${urlPrefix}/backupx/${pageid}/list.html`;
+
+        // スクレイピング間隔分待機
+        while (true) {
+            if (lastScraped + scrapingDelay < new Date().getTime()) break;
+
+            // CPU負荷軽減のため時間経過チェック間隔を抑制
+            await new Promise(_resolve => {
+                setTimeout(() => _resolve(), 250);
+            });
+        }
 
         fetch(url)
             .then(res => res.text())
@@ -85,16 +111,22 @@ function getUpdateInfo(pageid, pagename) {
                 const $                = cheerio.load(body);
                 const $backupEntries   = $('#wikibody').find('ul').eq(0).find('li');
                 let   isLoggedThisPage = false;                                      // 同じページ名の記録があるか否か
+                      lastScraped      = new Date().getTime();
 
                 $backupEntries.each((i, elem) => {
                     const modifiedTime = new Date($(elem).text().split('[')[0]).getTime(); // 編集時間
                     const contributor  = $(elem).text().match(contributorPattern);         // 編集者
                     const action       = ($backupEntries.length - 1 === i) ? '作成' : '編集';  // 操作 (作成|編集)
 
+                    if (pagename === '舞音KAGURA') {
+                        console.log('modified: ', $(elem).text().split('[')[0]);
+                    }
+
                     // 前回の最終更新情報と一致したら終了
-                    if (data['last-modified'].page == pagename &&
-                        data['last-modified'].time == modifiedTime) {
+                    if (data['last-modified'].page === pagename &&
+                        data['last-modified'].time === modifiedTime) {
                         isLatest = true;
+                        console.log('前回取得の編集履歴に到達しました');
 
                         return false;
                     }
