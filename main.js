@@ -224,7 +224,7 @@ function genEmbedFields(pages) {
 
         // 編集情報フィールドを追加
         for (const entry of v.entries.reverse()) {
-            if (fields[curIndex].length === fieldLimits) {
+            if (fields[curIndex].length + 3 > fieldLimits) {
                 fields.push([]);
                 curIndex++;
             }
