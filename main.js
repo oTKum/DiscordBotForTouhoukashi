@@ -79,6 +79,13 @@ async function main() {
 
     // 一番最後の編集時間を保存
     (function() {
+        // たまに取得した更新ページに最終編集ページがないと言われるので警告（調査中）
+        if (!updatedPages.hasOwnProperty(latestPagename)) {
+            console.warn('変数「updatedPages」に最終更新ページの項目がありません');
+            console.warn('次回実行時に同じ通知内容が送信される恐れがあります');
+            return;
+        }
+
         const saveData = {
             'last-modified': updatedPages[latestPagename].entries.slice(-1)[0].time
         }
