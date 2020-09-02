@@ -22,11 +22,12 @@ if (process.env.DISCORD_BOT_TOKEN == undefined) {
 client.login(process.env.DISCORD_BOT_TOKEN);
 
 /* ----- Main process ----- */
-const urlPrefix          = 'https://w.atwiki.jp/touhoukashi';
-const pagelistUrl        = urlPrefix + '/list';
-const updatedPages       = {};                                // 更新ページ格納用
-let   isLatest           = false;                             // 前回の最終更新情報に到達したか否か
-let   data;                                                   // 前回の更新情報
+const urlPrefix      = `https://w.atwiki.jp/${process.env.WIKI_ID}`;
+const pagelistUrl    = urlPrefix + '/list';
+let   updatedPages   = {};                                           // 更新ページ格納用
+let   latestPagename = '';                                           // 最終更新ページ
+let   isLatest       = false;                                        // 前回の最終更新情報に到達したか否か
+let   data;                                                          // 前回の更新情報
 
 const contributorPattern = /(?<=編集者\s*:\s+).+(?=\s+[\]|])/;
 
@@ -75,6 +76,27 @@ async function main() {
     }
 
     // TODO: 雑談ページの個別通知
+
+    // 一番最後の編集時間を保存
+    (function() {
+        const saveData = {
+            'last-modified': updatedPages[latestPagename].entries.slice(-1)[0].time
+        }
+
+        fs.writeFile('./data.json', JSON.stringify(saveData, null, '\t'), err => {
+            if (err) {
+                console.error(`Error: ${err}`);
+                return;
+            }
+
+            console.log('最終編集ページ時間保存完了');
+        });
+    })();
+
+    // 変数をリセット
+    updatedPages   = {};
+    latestPagename = '';
+    isLatest       = false;
 }
 
 /**
@@ -89,6 +111,7 @@ function getUpdatedPage() {
             .then(async body => {
                 const $                = cheerio.load(body);
                 const $pagelistEntries = $('table.pagelist').find('tr');
+                let   isFirstFetch     = true;                                                // 更新ページ一覧上のページ履歴の取得が初めてか否か
                       data             = JSON.parse(fs.readFileSync('./data.json', 'utf-8'));
                       lastScraped      = new Date().getTime();
 
@@ -107,6 +130,12 @@ function getUpdatedPage() {
 
                     // ページIDが取得できなければ飛ばす
                     if (pageid.length === -1) continue;
+
+                    // 最初に取得したページを最新ページとして記憶
+                    if (isFirstFetch) {
+                        isFirstFetch   = false;
+                        latestPagename = pagename;
+                    }
 
                     console.log(`ページ「${pagename}」の編集履歴を取得中…`);
 
@@ -155,7 +184,7 @@ function getUpdateInfo(pageid, pagename) {
                     const action       = ($backupEntries.length - 1 === i) ? '作成' : '編集';  // 操作 (作成|編集)
 
                     // 前回の最終更新情報と一致したら終了
-                    if (data['last-modified'].time === modifiedTime) {
+                    if (data['last-modified'] === modifiedTime) {
                         isLatest = true;
                         console.log('前回取得の編集履歴に到達しました');
 
@@ -163,7 +192,7 @@ function getUpdateInfo(pageid, pagename) {
                     }
 
                     // 前回の最終更新時間より古い編集だったら終了
-                    if (data['last-modified'].time > modifiedTime) return false;
+                    if (data['last-modified'] > modifiedTime) return false;
 
                     const entry = {
                         action     : action,
