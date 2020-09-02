@@ -25,8 +25,6 @@ client.login(process.env.DISCORD_BOT_TOKEN);
 const urlPrefix          = 'https://w.atwiki.jp/touhoukashi';
 const pagelistUrl        = urlPrefix + '/list';
 const updatedPages       = {};                                // 更新ページ格納用
-let   latestPagename     = '';                                // 最終更新ページ
-let   latestModifiedTime = 0;                                 // 最終更新ページの時刻 (from Date.getTime())
 let   isLatest           = false;                             // 前回の最終更新情報に到達したか否か
 let   data;                                                   // 前回の更新情報
 
@@ -77,6 +75,8 @@ async function main() {
 
         channel.send(sendOptions);
     }
+
+    // TODO: 雑談ページの個別通知
 }
 
 /**
@@ -101,10 +101,7 @@ function getUpdatedPage() {
                     if (i > 10) break;
 
                     // 最終更新情報に到達してれば終了
-                    if (isLatest) {
-                        console.log('yay');
-                        break;
-                    }
+                    if (isLatest) break;
 
                     const $link    = $pagelistEntries.eq(i).find('a');
                     const pagename = $link.text().trim();
@@ -125,7 +122,6 @@ function getUpdatedPage() {
                 resolve();
             });
     });
-
 }
 
 /**
@@ -134,7 +130,7 @@ function getUpdatedPage() {
  * @param {string} pagename 取得先のページの名前
  */
 function getUpdateInfo(pageid, pagename) {
-    return new Promise(async (resolve, _) => {
+    return new Promise(async resolve => {
         const url = `${urlPrefix}/backupx/${pageid}/list.html`;
 
         // スクレイピング間隔分待機
@@ -172,27 +168,25 @@ function getUpdateInfo(pageid, pagename) {
                     // 前回の最終更新時間より古い編集だったら終了
                     if (data['last-modified'].time > modifiedTime) return false;
 
+                    const entry = {
+                        action     : action,
+                        time       : modifiedTime,
+                        contributor: contributor[0].trim()
+                    }
+
                     // 同じページ名が記録されていなければ新規記録
                     if (!isLoggedThisPage) {
                         isLoggedThisPage       = true;
                         updatedPages[pagename] = {
                             url    : `${urlPrefix}/${pageid}.html`,
-                            entries: [{
-                                action     : action,
-                                time       : modifiedTime,
-                                contributor: contributor[0].trim()
-                            }]
+                            entries: [entry]
                         }
 
                         return;
                     }
 
                     // 記録に同じページ名があればそちらに追記する
-                    updatedPages[pagename]['entries'].push({
-                        action     : action,
-                        time       : modifiedTime,
-                        contributor: contributor[0].trim()
-                    });
+                    updatedPages[pagename].entries.push(entry);
                 });
 
                 resolve();
@@ -232,7 +226,7 @@ function genEmbedFields(pages) {
         }
 
         // 編集情報フィールドを追加
-        for (const entry of v.entries) {
+        for (const entry of v.entries.reverse()) {
             if (fields[curIndex].length === fieldLimits) {
                 fields.push([]);
                 curIndex++;
