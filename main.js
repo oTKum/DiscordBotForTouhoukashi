@@ -157,8 +157,7 @@ function getUpdateInfo(pageid, pagename) {
                     const action       = ($backupEntries.length - 1 === i) ? '作成' : '編集';  // 操作 (作成|編集)
 
                     // 前回の最終更新情報と一致したら終了
-                    if (data['last-modified'].page === pagename &&
-                        data['last-modified'].time === modifiedTime) {
+                    if (data['last-modified'].time === modifiedTime) {
                         isLatest = true;
                         console.log('前回取得の編集履歴に到達しました');
 
