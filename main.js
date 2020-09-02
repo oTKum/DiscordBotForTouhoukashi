@@ -43,10 +43,8 @@ async function main() {
     await getUpdatedPage();
     isLatest = false;
 
-    console.log(updatedPages);
-
     // 更新ページがあれば通知作成
-    if (Object.keys(updatedPages).length === -1) {
+    if (Object.keys(updatedPages).length === 0) {
         console.log('更新ページなし');
         return;
     }
