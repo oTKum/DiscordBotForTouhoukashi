@@ -10,9 +10,13 @@ const app = express();
 
 app.get('/wakeup', (_, res) => {
     res.send('Waked up!');
-});
+    console.log('Waked up!');
+}).listen(3000);
 
-app.listen(3000);
+// 3分おきに自身にアクセス
+cron.schedule('*/3 * * * *', () =>
+    fetch('https://discordbotfortouhoukashi.glitch.me/wakeup')
+);
 
 /* ----- Initialize ----- */
 const client = new discord.Client();
