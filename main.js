@@ -9,37 +9,45 @@ const discord = require('discord.js');
 /* ----- Initialize ----- */
 const client = new discord.Client();
 
-client.on('ready', _ => {
+client.on('ready', (_) => {
     console.log('Bot is ready!');
     main();
 });
 
-if (process.env.DISCORD_BOT_TOKEN == undefined) {
-    console.log("Please set ENV the DISCORD_BOT_TOKEN");
+if (process.env.DISCORD_BOT_TOKEN === undefined) {
+    console.log('Please set ENV the DISCORD_BOT_TOKEN');
     process.exit(0);
 }
 
 client.login(process.env.DISCORD_BOT_TOKEN);
 
 /* ----- Main process ----- */
-const urlPrefix      = `https://w.atwiki.jp/${process.env.WIKI_ID}`;
-const pagelistUrl    = urlPrefix + '/list';
-let   updatedPages   = {};                                           // 更新ページ格納用
-let   latestPagename = '';                                           // 最終更新ページ
-let   isLatest       = false;                                        // 前回の最終更新情報に到達したか否か
-let   data;                                                          // 前回の更新情報
+const urlPrefix    = `https://w.atwiki.jp/${process.env.WIKI_ID}`;
+const pageListUrl  = `${urlPrefix}/list`;
+// 更新ページ格納用
+let updatedPages   = {};
+// 最終更新ページ
+let latestPageName = '';
+// 前回の最終更新情報に到達したか否か
+let isLatest       = false;
+// 前回の更新情報
+let data;
 
 const contributorPattern = /(?<=編集者\s*:\s+).+(?=\s+[\]|])/;
 
-const scrapingDelay = 1000; // スクレイピングの間隔（ミリ秒）
-let   lastScraped;          // 最後のスクレイピング時間（ミリ秒）
+// スクレイピングの間隔（ミリ秒）
+const scrapingDelay = 1000;
+// 最後のスクレイピング時間（ミリ秒）
+let lastScraped;
 
 // 10分おきに更新ページ取得を実行
 // cron.schedule('*/10 * * * *', getUpdatedPage);
 // getUpdatedPage().then(res => console.log(updatedPages));
 
 async function main() {
-    const channel = client.channels.cache.get(process.env.DISCORD_UPDATE_CHANNEL_ID);
+    const channel = client.channels.cache.get(
+        process.env.DISCORD_UPDATE_CHANNEL_ID
+    );
 
     await getUpdatedPage();
     isLatest = false;
@@ -47,6 +55,7 @@ async function main() {
     // 更新ページがあれば通知作成
     if (Object.keys(updatedPages).length === 0) {
         console.log('更新ページなし');
+
         return;
     }
 
@@ -57,20 +66,21 @@ async function main() {
         const sendOptions = {};
         // 1回目の埋め込みならcontentを指定
         if (i === 0) {
-            sendOptions.content = ((Object.keys(updatedPages).length === 1)
-                ? 'いくつか' : '') + 'ページが更新されたみたいですよ～！';
+            sendOptions.content =
+                (Object.keys(updatedPages).length === 1 ? 'いくつか' : '') +
+                'ページが更新されたみたいですよ～！';
         }
         // 2回目以降の送信は間隔を設ける
         else {
-            await new Promise(resolve => {
+            await new Promise((resolve) => {
                 setTimeout(() => resolve(), sendInterval);
             });
         }
 
         sendOptions.embed = {
-            color: 16750848,
+            color : 16750848,
             fields: fields
-        }
+        };
 
         channel.send(sendOptions);
     }
@@ -78,31 +88,41 @@ async function main() {
     // TODO: 雑談ページの個別通知
 
     // 一番最後の編集時間を保存
-    (function() {
+    (function () {
         // たまに取得した更新ページに最終編集ページがないと言われるので警告（調査中）
-        if (!updatedPages.hasOwnProperty(latestPagename)) {
-            console.warn('変数「updatedPages」に最終更新ページの項目がありません');
+        if (!updatedPages.hasOwnProperty(latestPageName)) {
+            console.warn(
+                '変数「updatedPages」に最終更新ページの項目がありません'
+            );
+
             console.warn('次回実行時に同じ通知内容が送信される恐れがあります');
+
             return;
         }
 
         const saveData = {
-            'last-modified': updatedPages[latestPagename].entries.slice(-1)[0].time
-        }
+            'last-modified': updatedPages[latestPageName].entries.slice(-1)[0]
+                .time
+        };
 
-        fs.writeFile('./data.json', JSON.stringify(saveData, null, '\t'), err => {
-            if (err) {
-                console.error(`Error: ${err}`);
-                return;
+        fs.writeFile(
+            './data.json',
+            JSON.stringify(saveData, null, '\t'),
+            (err) => {
+                if (err) {
+                    console.error(`Error: ${err}`);
+
+                    return;
+                }
+
+                console.log('最終編集ページ時間保存完了');
             }
-
-            console.log('最終編集ページ時間保存完了');
-        });
+        );
     })();
 
     // 変数をリセット
     updatedPages   = {};
-    latestPagename = '';
+    latestPageName = '';
     isLatest       = false;
 }
 
@@ -113,14 +133,15 @@ function getUpdatedPage() {
     return new Promise((resolve, _) => {
         console.log('更新ページ一覧を取得中…');
 
-        fetch(pagelistUrl)
-            .then(res => res.text())
-            .then(async body => {
+        fetch(pageListUrl)
+            .then((res) => res.text())
+            .then(async (body) => {
                 const $                = cheerio.load(body);
                 const $pagelistEntries = $('table.pagelist').find('tr');
-                let   isFirstFetch     = true;                                                // 更新ページ一覧上のページ履歴の取得が初めてか否か
-                      data             = JSON.parse(fs.readFileSync('./data.json', 'utf-8'));
-                      lastScraped      = new Date().getTime();
+                // 更新ページ一覧上のページ履歴の取得が初めてか否か
+                let isFirstFetch       = true;
+                data                   = JSON.parse(fs.readFileSync('./data.json', 'utf-8'));
+                lastScraped            = new Date().getTime();
 
                 console.log('更新ページ一覧取得完了');
 
@@ -141,7 +162,7 @@ function getUpdatedPage() {
                     // 最初に取得したページを最新ページとして記憶
                     if (isFirstFetch) {
                         isFirstFetch   = false;
-                        latestPagename = pagename;
+                        latestPageName = pagename;
                     }
 
                     console.log(`ページ「${pagename}」の編集履歴を取得中…`);
@@ -164,7 +185,7 @@ function getUpdatedPage() {
  * @param {string} pagename 取得先のページの名前
  */
 function getUpdateInfo(pageid, pagename) {
-    return new Promise(async resolve => {
+    return new Promise(async (resolve) => {
         const url = `${urlPrefix}/backupx/${pageid}/list.html`;
 
         // スクレイピング間隔分待機
@@ -172,23 +193,33 @@ function getUpdateInfo(pageid, pagename) {
             if (lastScraped + scrapingDelay < new Date().getTime()) break;
 
             // CPU負荷軽減のため時間経過チェック間隔を抑制
-            await new Promise(_resolve => {
+            await new Promise((_resolve) => {
                 setTimeout(() => _resolve(), 249);
             });
         }
 
         fetch(url)
-            .then(res => res.text())
-            .then(body => {
-                const $                = cheerio.load(body);
-                const $backupEntries   = $('#wikibody').find('ul').eq(0).find('li');
-                let   isLoggedThisPage = false;                                      // 同じページ名の記録があるか否か
-                      lastScraped      = new Date().getTime();
+            .then((res) => res.text())
+            .then((body) => {
+                const $              = cheerio.load(body);
+                const $backupEntries = $('#wikibody')
+                    .find('ul')
+                    .eq(0)
+                    .find('li');
+                let isLoggedThisPage = false; // 同じページ名の記録があるか否か
+                lastScraped          = new Date().getTime();
 
                 $backupEntries.each((i, elem) => {
-                    const modifiedTime = new Date($(elem).text().split('[')[0]).getTime(); // 編集時間
-                    const contributor  = $(elem).text().match(contributorPattern);         // 編集者
-                    const action       = ($backupEntries.length - 1 === i) ? '作成' : '編集';  // 操作 (作成|編集)
+                    const modifiedTime = new Date(
+                        $(elem).text().split('[')[0]
+                    ).getTime(); // 編集時間
+
+                    const contributor = $(elem)
+                        .text()
+                        .match(contributorPattern); // 編集者
+
+                    const action =
+                              $backupEntries.length - 1 === i ? '作成' : '編集'; // 操作 (作成|編集)
 
                     // 前回の最終更新情報と一致したら終了
                     if (data['last-modified'] === modifiedTime) {
@@ -205,7 +236,7 @@ function getUpdateInfo(pageid, pagename) {
                         action     : action,
                         time       : modifiedTime,
                         contributor: contributor[0].trim()
-                    }
+                    };
 
                     // 同じページ名が記録されていなければ新規記録
                     if (!isLoggedThisPage) {
@@ -213,7 +244,7 @@ function getUpdateInfo(pageid, pagename) {
                         updatedPages[pagename] = {
                             url    : `${urlPrefix}/${pageid}.html`,
                             entries: [entry]
-                        }
+                        };
 
                         return;
                     }
@@ -233,9 +264,11 @@ function getUpdateInfo(pageid, pagename) {
  */
 function genEmbedFields(pages) {
     const fields      = [[]];
-    const fieldLimits = 25;   // フィールドの最大数
-    let   curIndex    = 0;    // フィールドラッパーのインデックス
+    const fieldLimits = 25; // フィールドの最大数
+    let curIndex      = 0; // フィールドラッパーのインデックス
 
+    // フィールド生成
+    // 古い順に表示するためreverse
     for (const [page, v] of Object.entries(pages).reverse()) {
         // このループのフィールド追加で埋め込みフィールド上限数を超える場合は新たな埋め込みを作成
         if (fields[curIndex].length + 4 > fieldLimits) {
@@ -265,19 +298,25 @@ function genEmbedFields(pages) {
                 curIndex++;
             }
 
-            fields[curIndex].push({
-                name  : ':pencil: **操作**',
-                value : entry.action,
-                inline: true
-            }, {
-                name  : ':woman_fairy: **編集者**',
-                value : entry.contributor,
-                inline: true
-            }, {
-                name  : ':clock4: **日時**',
-                value : moment(entry.time).utcOffset(9).format('YYYY/MM/DD HH:mm:ss'),
-                inline: true
-            });
+            fields[curIndex].push(
+                {
+                    name  : ':pencil: **操作**',
+                    value : entry.action,
+                    inline: true
+                },
+                {
+                    name  : ':woman_fairy: **編集者**',
+                    value : entry.contributor,
+                    inline: true
+                },
+                {
+                    name  : ':clock4: **日時**',
+                    value : moment(entry.time)
+                        .utcOffset(9)
+                        .format('YYYY/MM/DD HH:mm:ss'),
+                    inline: true
+                }
+            );
         }
     }
 
