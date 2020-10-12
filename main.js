@@ -1,10 +1,18 @@
 const fs      = require('fs');
 const cron    = require('node-cron');
-const http    = require('http');
+const express = require('express');
 const fetch   = require('node-fetch');
 const moment  = require('moment');
 const cheerio = require('cheerio');
 const discord = require('discord.js');
+
+const app = express();
+
+app.get('/wakeup', (_, res) => {
+    res.send('Waked up!');
+});
+
+app.listen(3000);
 
 /* ----- Initialize ----- */
 const client = new discord.Client();
