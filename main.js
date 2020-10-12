@@ -11,7 +11,8 @@ const client = new discord.Client();
 
 client.on('ready', (_) => {
     console.log('Bot is ready!');
-    main();
+    // 10分おきに更新ページ取得を実行
+    cron.schedule('*/10 * * * *', main);
 });
 
 if (process.env.DISCORD_BOT_TOKEN === undefined) {
@@ -40,10 +41,6 @@ const scrapingDelay = 1000;
 // 最後のスクレイピング時間（ミリ秒）
 let lastScraped;
 
-// 10分おきに更新ページ取得を実行
-// cron.schedule('*/10 * * * *', getUpdatedPage);
-// getUpdatedPage().then(res => console.log(updatedPages));
-
 async function main() {
     const channel = client.channels.cache.get(
         process.env.DISCORD_UPDATE_CHANNEL_ID
@@ -67,7 +64,7 @@ async function main() {
         // 1回目の埋め込みならcontentを指定
         if (i === 0) {
             sendOptions.content =
-                (Object.keys(updatedPages).length === 1 ? 'いくつか' : '') +
+                (Object.keys(updatedPages).length === 1 ? '' : 'いくつか') +
                 'ページが更新されたみたいですよ～！';
         }
         // 2回目以降の送信は間隔を設ける
@@ -146,9 +143,6 @@ function getUpdatedPage() {
                 console.log('更新ページ一覧取得完了');
 
                 for (let i = 1; i < $pagelistEntries.length; i++) {
-                    // デバッグ用
-                    if (i > 10) break;
-
                     // 最終更新情報に到達してれば終了
                     if (isLatest) break;
 
