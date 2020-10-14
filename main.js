@@ -2,9 +2,13 @@ const fs      = require('fs');
 const cron    = require('node-cron');
 const express = require('express');
 const fetch   = require('node-fetch');
-const moment  = require('moment');
+const moment  = require('moment-timezone');
 const cheerio = require('cheerio');
 const discord = require('discord.js');
+
+// タイムゾーン設定
+// noinspection JSUnresolvedFunction
+moment.tz.setDefault('Asia/Tokyo');
 
 const app = express();
 
@@ -317,9 +321,7 @@ function genEmbedFields(pages) {
                 },
                 {
                     name  : ':clock4: **日時**',
-                    value : moment(entry.time)
-                        .utcOffset(9)
-                        .format('YYYY/MM/DD HH:mm:ss'),
+                    value : moment(entry.time).format('YYYY/MM/DD HH:mm:ss'),
                     inline: true
                 }
             );

@@ -1,32 +1,32 @@
 {
-  "name": "discordbotfortouhoukashi",
-  "version": "1.0.0",
-  "description": "",
-  "main": "main.js",
-  "dependencies": {
-    "cheerio": "^1.0.0-rc.3",
-    "discord.js": "^12.3.1",
-    "express": "^4.17.1",
-    "fs": "0.0.1-security",
-    "moment": "^2.29.1",
-    "node-cron": "^2.0.3",
-    "node-fetch": "^2.6.1"
-  },
-  "engines": {
-    "node": "12.x"
-  },
-  "devDependencies": {},
-  "scripts": {
-    "start": "node main.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/oTKum/DiscordBotForTouhoukashi.git"
-  },
-  "author": "otokoume",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/oTKum/DiscordBotForTouhoukashi/issues"
-  },
-  "homepage": "https://github.com/oTKum/DiscordBotForTouhoukashi#readme"
+    "name": "discordbotfortouhoukashi",
+    "version": "1.0.0",
+    "description": "",
+    "main": "main.js",
+    "dependencies": {
+        "cheerio": "^1.0.0-rc.3",
+        "discord.js": "^12.3.1",
+        "express": "^4.17.1",
+        "fs": "0.0.1-security",
+        "moment-timezone": "^0.5.31",
+        "node-cron": "^2.0.3",
+        "node-fetch": "^2.6.1"
+    },
+    "engines": {
+        "node": "12.x"
+    },
+    "devDependencies": {},
+    "scripts": {
+        "start": "node main.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/oTKum/DiscordBotForTouhoukashi.git"
+    },
+    "author": "otokoume",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/oTKum/DiscordBotForTouhoukashi/issues"
+    },
+    "homepage": "https://github.com/oTKum/DiscordBotForTouhoukashi#readme"
 }
