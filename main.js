@@ -6,21 +6,11 @@ const moment  = require('moment-timezone');
 const cheerio = require('cheerio');
 const discord = require('discord.js');
 
+require('dotenv').config();
+
 // タイムゾーン設定
 // noinspection JSUnresolvedFunction
 moment.tz.setDefault('Asia/Tokyo');
-
-const app = express();
-
-app.get('/wakeup', (_, res) => {
-    res.send('Waked up!');
-    console.log('Waked up!');
-}).listen(3000);
-
-// 3分おきに自身にアクセス
-cron.schedule('*/3 * * * *', () =>
-    fetch('https://discordbotfortouhoukashi.glitch.me/wakeup')
-);
 
 /* ----- Initialize ----- */
 const client = new discord.Client();
@@ -153,8 +143,20 @@ function getUpdatedPage() {
                 const $pagelistEntries = $('table.pagelist').find('tr');
                 // 更新ページ一覧上のページ履歴の取得が初めてか否か
                 let isFirstFetch       = true;
-                data                   = JSON.parse(fs.readFileSync('./data.json', 'utf-8'));
-                lastScraped            = new Date().getTime();
+
+                const dataFileDir = './data.json';
+
+                // データファイルがなければ作成
+                if (!fs.existsSync(dataFileDir)) {
+                    fs.writeFileSync(
+                        dataFileDir,
+                        `{"last-modified": ${new Date().getTime()}}`
+                    );
+                }
+
+                const dataFile = fs.readFileSync(dataFileDir, 'utf-8');
+                data           = JSON.parse(dataFile);
+                lastScraped    = new Date().getTime();
 
                 console.log('更新ページ一覧取得完了');
 
@@ -231,8 +233,8 @@ function getUpdateInfo(pageid, pagename) {
                     const action =
                               $backupEntries.length - 1 === i ? '作成' : '編集'; // 操作 (作成|編集)
 
-                    // 前回の最終更新情報と一致したら終了
-                    if (data['last-modified'] === modifiedTime) {
+                    // このループでのページが前回の最終更新時刻より古かったら終了
+                    if (data['last-modified'] >= modifiedTime) {
                         isLatest = true;
                         console.log('前回取得の編集履歴に到達しました');
 
