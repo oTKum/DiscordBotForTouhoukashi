@@ -233,16 +233,21 @@ function getUpdateInfo(pageid, pagename) {
                     const action =
                               $backupEntries.length - 1 === i ? '作成' : '編集'; // 操作 (作成|編集)
 
-                    // このループでのページが前回の最終更新時刻より古かったら終了
-                    if (data['last-modified'] >= modifiedTime) {
+                    // 前回の最終更新情報と一致したら終了
+                    if (data['last-modified'] === modifiedTime) {
                         isLatest = true;
                         console.log('前回取得の編集履歴に到達しました');
 
                         return false;
                     }
 
-                    // 前回の最終更新時間より古い編集だったら終了
-                    if (data['last-modified'] > modifiedTime) return false;
+                    // 前回の最終更新時刻より古い編集だったら終了
+                    if (data['last-modified'] > modifiedTime) {
+                        // このページの最新版が古かったら前回取得の編集履歴に到達したとみなす
+                        if (i === 0) isLatest = true;
+
+                        return false;
+                    }
 
                     const entry = {
                         action     : action,
